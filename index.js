@@ -37,9 +37,9 @@ CREATE TABLE IF NOT EXISTS inventions (
     date_invented INTEGER,
     invention_name TEXT NOT NULL,
     invention_type TEXT,
-    dimensions JSONB,
-    iteration INTEGER,
-    iteration_of INTEGER REFERENCES inventions(id),
+    dimensions VARCHAR(255),
+    iteration VARCHAR(255),
+    iteration_of VARCHAR(255),
     materials TEXT[],
     inventor TEXT,
     research_groups TEXT[],
@@ -105,17 +105,13 @@ app.post('/api/inventions', async (req, res) => {
                 research_groups, model, model_image, regions,
                 number_of_corroborative_sources, source_ids, source_page_references,
                 primary_source_ids, ancient, modern, multi_regional
-            ) VALUES (
-                $1, 
-                CAST($2 AS INTEGER),
-                $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-            )
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
             RETURNING *;
         `;
 
         const values = [
             contributor,
-            dateInvented ? dateInvented.toString() : null,  // Send as string, will be cast to INTEGER by query
+            dateInvented ? parseInt(dateInvented) : null,  // Convert to integer
             inventionName,
             inventionType,
             dimensions,
