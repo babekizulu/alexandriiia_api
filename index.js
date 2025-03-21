@@ -6,8 +6,18 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// CORS configuration
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production'
+        ? ['https://alexandriiia.com']  // Client's production domain
+        : ['http://localhost:5173', 'http://127.0.0.1:5173'], // Vite's default development ports
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // PostgreSQL connection
@@ -24,7 +34,7 @@ const createTableQuery = `
 CREATE TABLE IF NOT EXISTS inventions (
     id SERIAL PRIMARY KEY,
     contributor TEXT,
-    date_invented DATE,
+    date_invented INTEGER,
     invention_name TEXT NOT NULL,
     invention_type TEXT,
     dimensions JSONB,
@@ -58,6 +68,8 @@ pool.query(createTableQuery, (err) => {
 // POST endpoint to create a new invention
 app.post('/api/inventions', async (req, res) => {
     try {
+        console.log('Received invention data:', req.body); // Debug log
+        
         const {
             contributor,
             dateInvented,
@@ -81,6 +93,11 @@ app.post('/api/inventions', async (req, res) => {
             multiRegional
         } = req.body;
 
+        // Validate required fields
+        if (!inventionName) {
+            return res.status(400).json({ error: 'Invention name is required' });
+        }
+
         const query = `
             INSERT INTO inventions (
                 contributor, date_invented, invention_name, invention_type,
@@ -88,13 +105,17 @@ app.post('/api/inventions', async (req, res) => {
                 research_groups, model, model_image, regions,
                 number_of_corroborative_sources, source_ids, source_page_references,
                 primary_source_ids, ancient, modern, multi_regional
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+            ) VALUES (
+                $1, 
+                CAST($2 AS INTEGER),
+                $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+            )
             RETURNING *;
         `;
 
         const values = [
             contributor,
-            dateInvented,
+            dateInvented ? dateInvented.toString() : null,  // Send as string, will be cast to INTEGER by query
             inventionName,
             inventionType,
             dimensions,
@@ -115,11 +136,23 @@ app.post('/api/inventions', async (req, res) => {
             multiRegional
         ];
 
+        console.log('Executing query with values:', values); // Debug log
         const result = await pool.query(query, values);
+        console.log('Query result:', result.rows[0]); // Debug log
+        
         res.status(201).json(result.rows[0]);
     } catch (error) {
-        console.error('Error creating invention:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error creating invention:', {
+            message: error.message,
+            stack: error.stack,
+            detail: error.detail,
+            hint: error.hint
+        });
+        res.status(500).json({ 
+            error: 'Internal server error',
+            message: error.message,
+            detail: error.detail
+        });
     }
 });
 
