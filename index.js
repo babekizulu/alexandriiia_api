@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
-const aiRoutes = require('./routes/ai');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -20,9 +19,6 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
-
-// Routes
-app.use('/api/ai', aiRoutes);
 
 // PostgreSQL connection
 const pool = new Pool({
