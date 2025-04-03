@@ -6,6 +6,7 @@ const csv = require('csv-parser');
 const {createWorker} = require('tesseract.js');
 const { PDFDocument } = require('pdf-lib');
 const sharp = require('sharp');
+const fsPath = require('path');
 
 
 async function parseFile(filePath, mimetype) {
@@ -23,7 +24,10 @@ async function parseFile(filePath, mimetype) {
 
     } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const result = await mammoth.extractRawText({ path: filePath });
-      return result.value;
+       // Limit to first 2000 words as a proxy for 5 pages
+      const words = result.value.split(/\s+/);
+      const limitedText = words.slice(0, 2000).join(' ');
+      return limitedText;
     } else if (mimetype === 'text/plain') {
       return await fs.readFile(filePath, 'utf-8');
     } else if (mimetype === 'text/csv' || mimetype === 'text/tab-separated-values') {
@@ -49,31 +53,35 @@ async function extractTextWithOCR(pdfPath, pageCount) {
   let fullText = '';
 
   for (let i = 1; i <= Math.min(5, pageCount); i++) {
-    const prefix = join(outputDir, `page-${i}`);
+    const prefix = fsPath.join(outputDir, `page-${i}`);
     const cmd = `pdftoppm "${pdfPath}" "${prefix}" -f ${i} -l ${i} -png`;
 
     try {
       execSync(cmd);
-      const files = await fs.readdir(outputDir);
-      console.log('Files in OCR output dir:', files);
       console.log(`Generated image for page ${i}`);
     } catch (err) {
       console.error(`Error generating image from PDF page ${i}:`, err);
       continue;
     }
 
-    const paddedIndex = i.toString().padStart(2, '0');
-    let imageFilePath = `${prefix}-${paddedIndex}.png`;
+    // Match actual file that was created
+    const files = await fs.readdir(outputDir);
+    const imageFileName = files.find(f => f.startsWith(`page-${i}-`) && f.endsWith('.png'));
+
+    if (!imageFileName) {
+      console.error(`Could not find image file for page ${i}`);
+      continue;
+    }
+
+    const imageFilePath = fsPath.join(outputDir, imageFileName);
 
     try {
-      await fs.access(imageFilePath);
-
-      // 🔥 OCR extract
+      // OCR extract
       const result = await worker.recognize(imageFilePath);
       console.log(`OCR Result for page ${i}:\n`, result.data.text.slice(0, 200));
       fullText += result.data.text + '\n';
 
-      // Optional: clean up
+      // Optional cleanup
       await fs.unlink(imageFilePath);
     } catch (err) {
       console.error(`OCR failed on page ${i}:`, err);
