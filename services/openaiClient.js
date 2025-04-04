@@ -4,7 +4,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-async function getAnalysisFromOpenAI(prompt) {
+async function getAnalysisFromOpenAI(prompt, systemPrompt = 'You are a helpful historian AI.') {
   try {
     if (!process.env.OPENAI_API_KEY) {
       console.error('OpenAI API key is not set');
@@ -16,7 +16,7 @@ async function getAnalysisFromOpenAI(prompt) {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'You are a helpful historian AI.' },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt },
       ],
     });
