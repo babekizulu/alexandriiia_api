@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const analysisRoute = require('./routes/analysis');
 const weaveRoute = require('./routes/weave');
-
+const verifyEvidenceRoute = require('./routes/verifyEvidence');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -14,5 +14,6 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/analyze', analysisRoute);
 app.use('/api/weave', weaveRoute);
+app.use('/api/verify-evidence', verifyEvidenceRoute);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

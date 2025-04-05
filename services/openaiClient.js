@@ -25,14 +25,14 @@ async function getAnalysisFromOpenAI(prompt, systemPrompt = 'You are a helpful h
       throw new Error('Received empty response from OpenAI');
     }
     
-    return response.choices[0].message.content;
+    return response.choices[0].message.content.trim();
   } catch (error) {
     console.error('OpenAI API error:', error.message);
     if (error.response) {
       console.error('OpenAI Error Status:', error.response.status);
       console.error('OpenAI Error Data:', error.response.data);
     }
-    throw new Error(`OpenAI API error: ${error.message}`);
+    throw error;
   }
 }
 
