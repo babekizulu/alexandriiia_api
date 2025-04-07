@@ -8,6 +8,7 @@ const analysisRoute = require('./routes/analysis');
 const weaveRoute = require('./routes/weave');
 const verifyEvidenceRoute = require('./routes/verifyEvidence');
 const curateRoute = require('./routes/curate');
+const visionRoute = require('./routes/vision');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -17,4 +18,5 @@ app.use('/api/analyze', analysisRoute);
 app.use('/api/weave', weaveRoute);
 app.use('/api/verify-evidence', verifyEvidenceRoute);
 app.use('/api/curate', curateRoute);
+app.use('/api/vision', visionRoute);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
