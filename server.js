@@ -11,6 +11,9 @@ const curateRoute = require('./routes/curate');
 const visionRoute = require('./routes/vision');
 const reverseGeocodeRoute = require('./routes/reverseGeocode');
 const locationHistoryRoute = require('./routes/locationHistory');
+const relationsRoute = require('./routes/relations');
+const figureSummaryRoute = require('./routes/figureSummary');
+const figureLinkRoute = require('./routes/figureLink');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -23,5 +26,7 @@ app.use('/api/curate', curateRoute);
 app.use('/api/vision', visionRoute);
 app.use('/api/reverse-geocode', reverseGeocodeRoute);
 app.use('/api/location-history', locationHistoryRoute);
-
+app.use('/api/relations', relationsRoute);
+app.use('/api/figure-summary', figureSummaryRoute);
+app.use('/api/figure-link', figureLinkRoute);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -16,7 +16,6 @@ Format the result as a paragraph.`.trim();
   
     try {
         const history = await getAnalysisFromOpenAI(prompt, 'You are a historian AI providing location history.');
-        console.log(`GPT History Output:\n${history}`);
         res.json({ history });
     } catch (error) {
         console.error('Error fetching location history:', error);
