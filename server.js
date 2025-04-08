@@ -9,6 +9,8 @@ const weaveRoute = require('./routes/weave');
 const verifyEvidenceRoute = require('./routes/verifyEvidence');
 const curateRoute = require('./routes/curate');
 const visionRoute = require('./routes/vision');
+const reverseGeocodeRoute = require('./routes/reverseGeocode');
+const locationHistoryRoute = require('./routes/locationHistory');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -19,4 +21,7 @@ app.use('/api/weave', weaveRoute);
 app.use('/api/verify-evidence', verifyEvidenceRoute);
 app.use('/api/curate', curateRoute);
 app.use('/api/vision', visionRoute);
+app.use('/api/reverse-geocode', reverseGeocodeRoute);
+app.use('/api/location-history', locationHistoryRoute);
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
