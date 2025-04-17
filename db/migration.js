@@ -152,6 +152,46 @@ const runMigration = async () => {
         `);
         console.log('Username column added successfully');
       }
+      
+      // Check if resetPasswordToken column exists
+      const resetTokenCheck = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public' 
+          AND table_name = 'users' 
+          AND column_name = 'reset_password_token'
+        );
+      `);
+
+      // If resetPasswordToken column doesn't exist, add it
+      if (!resetTokenCheck.rows[0].exists) {
+        console.log('Adding reset_password_token column to users table...');
+        await pool.query(`
+          ALTER TABLE users 
+          ADD COLUMN reset_password_token VARCHAR(255);
+        `);
+        console.log('reset_password_token column added successfully');
+      }
+
+      // Check if resetPasswordExpires column exists
+      const resetExpiresCheck = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public' 
+          AND table_name = 'users' 
+          AND column_name = 'reset_password_expires'
+        );
+      `);
+
+      // If resetPasswordExpires column doesn't exist, add it
+      if (!resetExpiresCheck.rows[0].exists) {
+        console.log('Adding reset_password_expires column to users table...');
+        await pool.query(`
+          ALTER TABLE users 
+          ADD COLUMN reset_password_expires TIMESTAMP WITH TIME ZONE;
+        `);
+        console.log('reset_password_expires column added successfully');
+      }
     }
 
     console.log('Migration completed successfully');

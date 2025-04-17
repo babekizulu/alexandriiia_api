@@ -1,6 +1,8 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto'); // Needed for generating token
 const pool = require('../db/db'); // assuming you use pg
+const { sendPasswordResetEmail } = require('../services/emailService'); // Import email service
 require('dotenv').config();
 
 // Cookie configuration for both signin and signup
@@ -213,4 +215,91 @@ const signout = async (req, res) => {
   res.status(200).json({ message: 'Signed out successfully' });
 };
 
-module.exports = { signup, signin, verifyToken, updateSubscription, signout };
+// Forgot Password - Generate Token and Send Email
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = userResult.rows[0];
+
+    if (!user) {
+      // Important: Don't reveal if the user exists or not for security reasons
+      console.log(`Password reset request for non-existent email: ${email}`);
+      return res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
+    }
+
+    // Generate a reset token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    // Set token expiry (e.g., 1 hour)
+    const resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+
+    // Save the token and expiry date to the user's record
+    await pool.query(
+      'UPDATE users SET reset_password_token = $1, reset_password_expires = $2 WHERE id = $3',
+      [resetToken, resetPasswordExpires, user.id]
+    );
+
+    // Send the email
+    await sendPasswordResetEmail(user.email, resetToken);
+
+    res.status(200).json({ message: 'Password reset email sent successfully.' });
+
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    // Generic error message to the client
+    res.status(500).json({ message: 'Error processing forgot password request.' });
+  }
+};
+
+// Reset Password - Verify Token and Update Password
+const resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  if (!password) {
+      return res.status(400).json({ message: 'New password is required.' });
+  }
+
+  try {
+    // Find user by token and check if token is still valid (not expired)
+    const userResult = await pool.query(
+      'SELECT * FROM users WHERE reset_password_token = $1 AND reset_password_expires > NOW()',
+      [token]
+    );
+    const user = userResult.rows[0];
+
+    if (!user) {
+      return res.status(400).json({ message: 'Password reset token is invalid or has expired.' });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update the user's password and clear the reset token fields
+    await pool.query(
+      'UPDATE users SET password = $1, reset_password_token = NULL, reset_password_expires = NULL WHERE id = $2',
+      [hashedPassword, user.id]
+    );
+
+    // Optionally: Log the user in automatically after password reset
+    // const jwtToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY });
+    // res.cookie('authToken', jwtToken, getCookieConfig());
+
+    res.status(200).json({ message: 'Password has been reset successfully.' });
+
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    res.status(500).json({ message: 'Error resetting password.' });
+  }
+};
+
+module.exports = { 
+  signup, 
+  signin, 
+  verifyToken, 
+  updateSubscription, 
+  signout, 
+  forgotPassword,
+  resetPassword
+};
